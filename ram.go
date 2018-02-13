@@ -1,11 +1,11 @@
 package chip8
 
 type RAM struct {
-	data []byte
+	data [RamSize]byte
 }
 
 func NewRAM() *RAM {
-	return &RAM{data: make([]byte, RamSize, RamSize)}
+	return &RAM{}
 }
 
 func (r *RAM) Load(rom *ROM) {
