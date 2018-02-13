@@ -96,7 +96,7 @@ func (s *SkipX) Execute() {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
 	if s.cpu.v[x] == kk {
-		s.cpu.pc += InstructionSize * 2 // skip one instruction
+		s.cpu.pc += InstructionSize // skip one instruction
 	}
 }
 
@@ -116,7 +116,7 @@ func (s *SkipNotX) Execute() {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
 	if s.cpu.v[x] != kk {
-		s.cpu.pc += InstructionSize * 2 // skip one instruction
+		s.cpu.pc += InstructionSize // skip one instruction
 	}
 }
 
@@ -136,7 +136,7 @@ func (s *SkipXY) Execute() {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
 	if s.cpu.v[x] == s.cpu.v[y] {
-		s.cpu.pc += InstructionSize * 2 // skip one instruction
+		s.cpu.pc += InstructionSize // skip one instruction
 	}
 }
 
