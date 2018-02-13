@@ -43,6 +43,8 @@ func (cpu *CPU) ReadInstruction(ram *RAM) Instruction {
 		return &SkipXY{instruction}
 	case 0x6:
 		return &Load{instruction}
+	case 0x7:
+		return &Add{instruction}
 
 	}
 	return instruction

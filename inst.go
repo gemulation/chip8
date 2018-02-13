@@ -170,3 +170,22 @@ func (l *Load) String() string {
 	kk := l.val & 0xFF
 	return fmt.Sprintf("%04X - %04X - LD V%d, %04X", l.pc, l.val, x, kk)
 }
+
+// Add sets Vx = Vx + kk.
+// 7xkk - ADD Vx, byte
+// Adds the value kk to the value of register Vx, then stores the result in Vx.
+type Add struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (a *Add) Execute() error {
+	x := (a.val >> 8) & 0xF
+	kk := a.val & 0xFF
+	a.cpu.v[x] += kk // add value to register
+	return nil
+}
+
+func (a *Add) String() string {
+	x := (a.val >> 8) & 0xF
+	kk := a.val & 0xFF
+	return fmt.Sprintf("%04X - %04X - ADD V%d, %04X", a.pc, a.val, x, kk)
+}
