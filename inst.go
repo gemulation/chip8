@@ -3,7 +3,7 @@ package chip8
 import "fmt"
 
 type Instruction interface {
-	Execute() error
+	Execute()
 	fmt.Stringer
 }
 
@@ -15,8 +15,8 @@ type BaseInstruction struct {
 }
 
 // Execute the instruction.
-func (b *BaseInstruction) Execute() error {
-	return nil
+func (b *BaseInstruction) Execute() {
+
 }
 
 func (b *BaseInstruction) String() string {
@@ -28,8 +28,8 @@ func (b *BaseInstruction) String() string {
 type Clear struct{ *BaseInstruction }
 
 // Execute the instruction.
-func (c *Clear) Execute() error {
-	return nil
+func (c *Clear) Execute() {
+
 }
 
 func (c *Clear) String() string {
@@ -42,10 +42,9 @@ func (c *Clear) String() string {
 type Return struct{ *BaseInstruction }
 
 // Execute the instruction.
-func (r *Return) Execute() error {
+func (r *Return) Execute() {
 	r.cpu.sp--                       // decrement the stack
 	r.cpu.pc = r.cpu.stack[r.cpu.sp] // retrieve the program counter from the call stack
-	return nil
 }
 
 func (r *Return) String() string {
@@ -58,10 +57,9 @@ func (r *Return) String() string {
 type Jump struct{ *BaseInstruction }
 
 // Execute the instruction.
-func (j *Jump) Execute() error {
+func (j *Jump) Execute() {
 	nnn := j.val & 0xFFF
 	j.cpu.pc = nnn
-	return nil
 }
 
 func (j *Jump) String() string {
@@ -76,12 +74,11 @@ func (j *Jump) String() string {
 type Call struct{ *BaseInstruction }
 
 // Execute the instruction.
-func (c *Call) Execute() error {
+func (c *Call) Execute() {
 	nnn := c.val & 0xFFF
 	c.cpu.stack[c.cpu.sp] = c.cpu.pc // store the program counter on the call stack
 	c.cpu.pc = nnn                   // set the program counter to the call address
 	c.cpu.sp++                       // increment the stack
-	return nil
 }
 
 func (c *Call) String() string {
@@ -95,19 +92,18 @@ func (c *Call) String() string {
 type SkipX struct{ *BaseInstruction }
 
 // Execute the instruction.
-func (s *SkipX) Execute() error {
+func (s *SkipX) Execute() {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
 	if s.cpu.v[x] == kk {
 		s.cpu.pc += InstructionSize * 2 // skip one instruction
 	}
-	return nil
 }
 
 func (s *SkipX) String() string {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
-	return fmt.Sprintf("%04X - %04X - SE V%d, %04X", s.pc, s.val, x, kk)
+	return fmt.Sprintf("%04X - %04X - SE V%X, %04X", s.pc, s.val, x, kk)
 }
 
 // SkipNotX skips next instruction if Vx != kk.
@@ -116,19 +112,18 @@ func (s *SkipX) String() string {
 type SkipNotX struct{ *BaseInstruction }
 
 // Execute the instruction.
-func (s *SkipNotX) Execute() error {
+func (s *SkipNotX) Execute() {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
 	if s.cpu.v[x] != kk {
 		s.cpu.pc += InstructionSize * 2 // skip one instruction
 	}
-	return nil
 }
 
 func (s *SkipNotX) String() string {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
-	return fmt.Sprintf("%04X - %04X - SNE V%d, %04X", s.pc, s.val, x, kk)
+	return fmt.Sprintf("%04X - %04X - SNE V%X, %04X", s.pc, s.val, x, kk)
 }
 
 // SkipXY skips next instruction if Vx = Vy.
@@ -137,55 +132,207 @@ func (s *SkipNotX) String() string {
 type SkipXY struct{ *BaseInstruction }
 
 // Execute the instruction.
-func (s *SkipXY) Execute() error {
+func (s *SkipXY) Execute() {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
 	if s.cpu.v[x] == s.cpu.v[y] {
 		s.cpu.pc += InstructionSize * 2 // skip one instruction
 	}
-	return nil
 }
 
 func (s *SkipXY) String() string {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - SE V%d, Vy%d", s.pc, s.val, x, y)
+	return fmt.Sprintf("%04X - %04X - SE V%X, Vy%d", s.pc, s.val, x, y)
 }
 
-// Load sets Vx = kk.
+// LoadX sets Vx = kk.
 // 6xkk - LD Vx, byte
 // The interpreter puts the value kk into register Vx.
-type Load struct{ *BaseInstruction }
+type LoadX struct{ *BaseInstruction }
 
 // Execute the instruction.
-func (l *Load) Execute() error {
+func (l *LoadX) Execute() {
 	x := (l.val >> 8) & 0xF
 	kk := l.val & 0xFF
 	l.cpu.v[x] = kk // load register
-	return nil
 }
 
-func (l *Load) String() string {
+func (l *LoadX) String() string {
 	x := (l.val >> 8) & 0xF
 	kk := l.val & 0xFF
-	return fmt.Sprintf("%04X - %04X - LD V%d, %04X", l.pc, l.val, x, kk)
+	return fmt.Sprintf("%04X - %04X - LD V%X, %04X", l.pc, l.val, x, kk)
 }
 
-// Add sets Vx = Vx + kk.
+// AddX sets Vx = Vx + kk.
 // 7xkk - ADD Vx, byte
 // Adds the value kk to the value of register Vx, then stores the result in Vx.
-type Add struct{ *BaseInstruction }
+type AddX struct{ *BaseInstruction }
 
 // Execute the instruction.
-func (a *Add) Execute() error {
+func (a *AddX) Execute() {
 	x := (a.val >> 8) & 0xF
 	kk := a.val & 0xFF
 	a.cpu.v[x] += kk // add value to register
-	return nil
 }
 
-func (a *Add) String() string {
+func (a *AddX) String() string {
 	x := (a.val >> 8) & 0xF
 	kk := a.val & 0xFF
-	return fmt.Sprintf("%04X - %04X - ADD V%d, %04X", a.pc, a.val, x, kk)
+	return fmt.Sprintf("%04X - %04X - ADD V%X, %04X", a.pc, a.val, x, kk)
+}
+
+// LoadXY sets Vx = Vy.
+// 8xy0 - LD Vx, Vy
+// Stores the value of register Vy in register Vx.
+type LoadXY struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (l *LoadXY) Execute() {
+	x := (l.val >> 8) & 0xF
+	y := (l.val >> 4) & 0xF
+	l.cpu.v[x] = l.cpu.v[y] // copy register
+}
+
+func (l *LoadXY) String() string {
+	x := (l.val >> 8) & 0xF
+	y := (l.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - LD V%X, V%X", l.pc, l.val, x, y)
+}
+
+// OR sets Vx = Vx OR Vy.
+// 8xy1 - OR Vx, Vy
+// Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
+// A bitwise OR compares the corrseponding bits from two values, and if either bit is 1,
+// then the same bit in the result is also 1. Otherwise, it is 0.
+type OR struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (o *OR) Execute() {
+	x := (o.val >> 8) & 0xF
+	y := (o.val >> 4) & 0xF
+	o.cpu.v[x] |= o.cpu.v[y] // bitwise OR
+}
+
+func (o *OR) String() string {
+	x := (o.val >> 8) & 0xF
+	y := (o.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - OR V%X, V%X", o.pc, o.val, x, y)
+}
+
+// AND sets Vx = Vx AND Vy.
+// 8xy2 - AND Vx, Vy
+// Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
+// A bitwise AND compares the corrseponding bits from two values, and if both bits are 1,
+// then the same bit in the result is also 1. Otherwise, it is 0.
+type AND struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (a *AND) Execute() {
+	x := (a.val >> 8) & 0xF
+	y := (a.val >> 4) & 0xF
+	a.cpu.v[x] &= a.cpu.v[y] // bitwise AND
+}
+
+func (a *AND) String() string {
+	x := (a.val >> 8) & 0xF
+	y := (a.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - AND V%X, V%X", a.pc, a.val, x, y)
+}
+
+// XOR sets Vx = Vx XOR Vy.
+// 8xy3 - XOR Vx, Vy
+// Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx.
+// An exclusive OR compares the corrseponding bits from two values, and if the bits are not both the same,
+// then the corresponding bit in the result is set to 1. Otherwise, it is 0.
+type XOR struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (r *XOR) Execute() {
+	x := (r.val >> 8) & 0xF
+	y := (r.val >> 4) & 0xF
+	r.cpu.v[x] ^= r.cpu.v[y] // bitwise XOR
+}
+
+func (r *XOR) String() string {
+	x := (r.val >> 8) & 0xF
+	y := (r.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - XOR V%X, V%X", r.pc, r.val, x, y)
+}
+
+// AddXY sets Vx = Vx + Vy, set VF = carry.
+// 8xy4 - ADD Vx, Vy
+// The values of Vx and Vy are added together. If the result is greater than 8 bits (i.e., > 0xFF,)
+// VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
+type AddXY struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (a *AddXY) Execute() {
+	x := (a.val >> 8) & 0xF
+	y := (a.val >> 4) & 0xF
+	xy := a.cpu.v[x] + a.cpu.v[y]
+
+	// set VF with the carry
+	a.cpu.v[0xF] = 0
+	if xy > 0xFF {
+		a.cpu.v[0xF] = 1
+	}
+
+	// only the lowest 8 bits of the result are kept, and stored in Vx.
+	a.cpu.v[x] = xy & 0xFF
+}
+
+func (a *AddXY) String() string {
+	x := (a.val >> 8) & 0xF
+	y := (a.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - ADD V%X, V%X", a.pc, a.val, x, y)
+}
+
+// SubXY sets Vx = Vx - Vy, set VF = NOT borrow.
+// 8xy5 - SUB Vx, Vy
+// If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
+type SubXY struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SubXY) Execute() {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	xy := s.cpu.v[x] - s.cpu.v[y]
+
+	// set VF with NOT borrow
+	s.cpu.v[0xF] = 0
+	if s.cpu.v[x] > s.cpu.v[y] {
+		s.cpu.v[0xF] = 1
+	}
+
+	s.cpu.v[x] = xy
+}
+
+func (s *SubXY) String() string {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - SUB V%X, V%X", s.pc, s.val, x, y)
+}
+
+// SHR sets Vx = Vx SHR 1.
+// 8xy6 - SHR Vx {, Vy}
+// If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
+type SHR struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SHR) Execute() {
+	x := (s.val >> 8) & 0xF
+
+	s.cpu.v[0xF] = 0
+	if s.cpu.v[x]&1 == 1 {
+		s.cpu.v[0xF] = 1
+	}
+
+	s.cpu.v[x] /= 2
+}
+
+func (s *SHR) String() string {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - SHR V%X {, V%X}", s.pc, s.val, x, y)
 }

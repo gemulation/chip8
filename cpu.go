@@ -15,7 +15,7 @@ func NewCPU() *CPU {
 }
 
 func (cpu *CPU) ReadInstruction(ram *RAM) Instruction {
-	// read 2bytes integer in little endian format
+	// read 2 bytes integer in little endian format
 	val := (uint16(ram.data[cpu.pc]) << 8) | uint16(ram.data[cpu.pc+1])
 	if val == 0 {
 		return nil
@@ -42,10 +42,26 @@ func (cpu *CPU) ReadInstruction(ram *RAM) Instruction {
 	case 0x5:
 		return &SkipXY{instruction}
 	case 0x6:
-		return &Load{instruction}
+		return &LoadX{instruction}
 	case 0x7:
-		return &Add{instruction}
-
+		return &AddX{instruction}
+	case 0x8:
+		switch val & 0xF {
+		case 0x0:
+			return &LoadXY{instruction}
+		case 0x1:
+			return &OR{instruction}
+		case 0x2:
+			return &AND{instruction}
+		case 0x3:
+			return &XOR{instruction}
+		case 0x4:
+			return &AddXY{instruction}
+		case 0x5:
+			return &SubXY{instruction}
+		case 0x6:
+			return &SHR{instruction}
+		}
 	}
 	return instruction
 }
