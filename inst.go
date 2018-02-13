@@ -11,7 +11,7 @@ type BaseInstruction struct {
 	cpu *CPU
 	ram *RAM
 	val uint16
-	pos uint16
+	pc  uint16
 }
 
 // Execute the instruction.
@@ -20,7 +20,7 @@ func (b *BaseInstruction) Execute() error {
 }
 
 func (b *BaseInstruction) String() string {
-	return fmt.Sprintf("%04X - %04X", b.pos, b.val)
+	return fmt.Sprintf("%04X - %04X", b.pc, b.val)
 }
 
 // Clear the display.
@@ -49,7 +49,7 @@ func (r *Return) Execute() error {
 }
 
 func (r *Return) String() string {
-	return fmt.Sprintf("%04X RET", r.val)
+	return fmt.Sprintf("%04d - %04X - RET", r.pc, r.val)
 }
 
 // Jump to location nnn.
@@ -59,14 +59,14 @@ type Jump struct{ *BaseInstruction }
 
 // Execute the instruction.
 func (j *Jump) Execute() error {
-	// addr := ((j.val & 0xFFF) - ProgramLocation) / InstructionSize
-	// j.cpu.pc = addr
+	nnn := j.val & 0xFFF
+	j.cpu.pc = nnn
 	return nil
 }
 
 func (j *Jump) String() string {
-	addr := ((j.val & 0xFFF) - ProgramLocation) / InstructionSize
-	return fmt.Sprintf("%04d - %04X - JP %04X", j.pos, j.val, addr)
+	nnn := j.val & 0xFFF
+	return fmt.Sprintf("%04d - %04X - JP %04X", j.pc, j.val, nnn)
 }
 
 // Call subroutine at nnn.
@@ -77,49 +77,96 @@ type Call struct{ *BaseInstruction }
 
 // Execute the instruction.
 func (c *Call) Execute() error {
-	addr := ((c.val & 0xFFF) - ProgramLocation) / InstructionSize
+	nnn := c.val & 0xFFF
 	c.cpu.stack[c.cpu.sp] = c.cpu.pc // store the program counter on the call stack
-	c.cpu.pc = addr                  // set the program counter to the call address
+	c.cpu.pc = nnn                   // set the program counter to the call address
 	c.cpu.sp++                       // increment the stack
 	return nil
 }
 
 func (c *Call) String() string {
-	addr := ((c.val & 0xFFF) - ProgramLocation) / InstructionSize
-	return fmt.Sprintf("%04X - %04X - CALL %04X", c.pos, c.val, addr)
+	nnn := c.val & 0xFFF
+	return fmt.Sprintf("%04X - %04X - CALL %04X", c.pc, c.val, nnn)
 }
 
-// override fun clear() = builder.line("clear")
-// override fun ret() = builder.line("ret")
-// override fun jmp(address: Int) = builder.line("jmp 0x${address.hex}")
-// override fun call(address: Int) = builder.line("call 0x${address.hex}")
-// override fun jeq(reg: Int, value: Int) = builder.line("jeq v${reg.hex}, 0x${value.hex}")
-// override fun jneq(reg: Int, value: Int) = builder.line("jneq v${reg.hex}, 0x${value.hex}")
-// override fun jeqr(reg1: Int, reg2: Int) = builder.line("jeqr v${reg1.hex}, v${reg2.hex}")
-// override fun set(reg: Int, value: Int) = builder.line("set v${reg.hex}, 0x${value.hex}")
-// override fun add(reg: Int, value: Int) = builder.line("add v${reg.hex}, 0x${value.hex}")
-// override fun setr(reg1: Int, reg2: Int) = builder.line("setr v${reg1.hex}, v${reg2.hex}")
-// override fun or(reg1: Int, reg2: Int) = builder.line("or v${reg1.hex}, v${reg2.hex}")
-// override fun and(reg1: Int, reg2: Int) = builder.line("and v${reg1.hex}, v${reg2.hex}")
-// override fun xor(reg1: Int, reg2: Int) = builder.line("xor v${reg1.hex}, v${reg2.hex}")
-// override fun addr(reg1: Int, reg2: Int) = builder.line("addr v${reg1.hex}, v${reg2.hex}")
-// override fun sub(reg1: Int, reg2: Int) = builder.line("sub v${reg1.hex}, v${reg2.hex}")
-// override fun shr(reg1: Int) = builder.line("shr v${reg1.hex}")
-// override fun subb(reg1: Int, reg2: Int) = builder.line("subb v${reg1.hex}, v${reg2.hex}")
-// override fun shl(reg1: Int) = builder.line("shl v${reg1.hex}")
-// override fun jneqr(reg1: Int, reg2: Int) = builder.line("jneqr v${reg1.hex}, v${reg2.hex}")
-// override fun seti(value: Int) = builder.line("seti 0x${value.hex}")
-// override fun jmpv0(address: Int) = builder.line("jmpv0 0x${address.hex}")
-// override fun rand(reg: Int, value: Int) = builder.line("rand v${reg.hex}, 0x${value.hex}")
-// override fun draw(reg1: Int, reg2: Int, value: Int) = builder.line("draw v${reg1.hex}, v${reg2.hex}, 0x${value.hex}")
-// override fun jkey(reg: Int) = builder.line("jkey v${reg.hex}")
-// override fun jnkey(reg: Int) = builder.line("jnkey v${reg.hex}")
-// override fun getdelay(reg: Int) = builder.line("getdelay v${reg.hex}")
-// override fun waitkey(reg: Int) = builder.line("waitkey v${reg.hex}")
-// override fun setdelay(reg: Int) = builder.line("setdelay v${reg.hex}")
-// override fun setsound(reg: Int) = builder.line("setsound v${reg.hex}")
-// override fun addi(reg: Int) = builder.line("addi v${reg.hex}")
-// override fun spritei(reg: Int) = builder.line("spritei v${reg.hex}")
-// override fun bcd(reg: Int) = builder.line("bcd v${reg.hex}")
-// override fun push(reg: Int) = builder.line("push v0-v${reg.hex}")
-// override fun pop(reg: Int) = builder.line("pop v0-v${reg.hex}")
+// SkipX skips next instruction if Vx = kk.
+// 3xkk - SE Vx, byte
+// The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
+type SkipX struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SkipX) Execute() error {
+	x := (s.val >> 8) & 0xF
+	kk := s.val & 0xFF
+	if s.cpu.v[x] == kk {
+		s.cpu.pc += InstructionSize * 2 // skip one instruction
+	}
+	return nil
+}
+
+func (s *SkipX) String() string {
+	x := (s.val >> 8) & 0xF
+	kk := s.val & 0xFF
+	return fmt.Sprintf("%04X - %04X - SE V%d, %04X", s.pc, s.val, x, kk)
+}
+
+// SkipNotX skips next instruction if Vx != kk.
+// 4xkk - SNE Vx, byte
+// The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
+type SkipNotX struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SkipNotX) Execute() error {
+	x := (s.val >> 8) & 0xF
+	kk := s.val & 0xFF
+	if s.cpu.v[x] != kk {
+		s.cpu.pc += InstructionSize * 2 // skip one instruction
+	}
+	return nil
+}
+
+func (s *SkipNotX) String() string {
+	x := (s.val >> 8) & 0xF
+	kk := s.val & 0xFF
+	return fmt.Sprintf("%04X - %04X - SNE V%d, %04X", s.pc, s.val, x, kk)
+}
+
+// SkipXY skips next instruction if Vx = Vy.
+// 5xy0 - SE Vx, Vy
+// The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
+type SkipXY struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SkipXY) Execute() error {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	if s.cpu.v[x] == s.cpu.v[y] {
+		s.cpu.pc += InstructionSize * 2 // skip one instruction
+	}
+	return nil
+}
+
+func (s *SkipXY) String() string {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - SE V%d, Vy%d", s.pc, s.val, x, y)
+}
+
+// Load sets Vx = kk.
+// 6xkk - LD Vx, byte
+// The interpreter puts the value kk into register Vx.
+type Load struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (l *Load) Execute() error {
+	x := (l.val >> 8) & 0xF
+	kk := l.val & 0xFF
+	l.cpu.v[x] = kk // load register
+	return nil
+}
+
+func (l *Load) String() string {
+	x := (l.val >> 8) & 0xF
+	kk := l.val & 0xFF
+	return fmt.Sprintf("%04X - %04X - LD V%d, %04X", l.pc, l.val, x, kk)
+}

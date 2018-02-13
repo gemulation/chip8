@@ -24,9 +24,9 @@ func (emulator *Emulator) Run() error {
 			break
 		}
 		fmt.Println(instruction)
-		if err := instruction.Execute(); err != nil {
-			return err
-		}
+		// if err := instruction.Execute(); err != nil {
+		// 	return err
+		// }
 	}
 	return nil
 }
