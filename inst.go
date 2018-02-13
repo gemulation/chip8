@@ -43,8 +43,8 @@ type Return struct{ *BaseInstruction }
 
 // Execute the instruction.
 func (r *Return) Execute() {
-	r.cpu.sp--                       // decrement the stack
 	r.cpu.pc = r.cpu.stack[r.cpu.sp] // retrieve the program counter from the call stack
+	r.cpu.sp--                       // decrement the stack
 }
 
 func (r *Return) String() string {
@@ -76,9 +76,9 @@ type Call struct{ *BaseInstruction }
 // Execute the instruction.
 func (c *Call) Execute() {
 	nnn := c.val & 0xFFF
+	c.cpu.sp++                       // increment the stack
 	c.cpu.stack[c.cpu.sp] = c.cpu.pc // store the program counter on the call stack
 	c.cpu.pc = nnn                   // set the program counter to the call address
-	c.cpu.sp++                       // increment the stack
 }
 
 func (c *Call) String() string {
