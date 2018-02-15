@@ -336,3 +336,52 @@ func (s *SHR) String() string {
 	y := (s.val >> 4) & 0xF
 	return fmt.Sprintf("%04X - %04X - SHR V%X {, V%X}", s.pc, s.val, x, y)
 }
+
+// SubN set Vx = Vy - Vx, set VF = NOT borrow.
+// 8xy7 - SUBN Vx, Vy
+// If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
+type SubN struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SubN) Execute() {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	yx := s.cpu.v[y] - s.cpu.v[x]
+
+	// set VF with NOT borrow
+	s.cpu.v[0xF] = 0
+	if s.cpu.v[y] > s.cpu.v[x] {
+		s.cpu.v[0xF] = 1
+	}
+
+	s.cpu.v[x] = yx
+}
+
+func (s *SubN) String() string {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - SUBN V%X, V%X", s.pc, s.val, x, y)
+}
+
+// SHL sets Vx = Vx SHL 1.
+// 8xyE - SHL Vx {, Vy}
+// If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
+type SHL struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SHL) Execute() {
+	x := (s.val >> 8) & 0xF
+
+	s.cpu.v[0xF] = 0
+	if (s.cpu.v[x]>>3)&1 == 1 {
+		s.cpu.v[0xF] = 1
+	}
+
+	s.cpu.v[x] *= 2
+}
+
+func (s *SHL) String() string {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - SHL V%X {, V%X}", s.pc, s.val, x, y)
+}
