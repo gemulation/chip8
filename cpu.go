@@ -3,6 +3,8 @@ package chip8
 type CPU struct {
 	stack [StackSize]uint16
 	v     [RegSize]uint16
+	dt    uint8
+	st    uint8
 	sp    uint8
 	pc    uint16
 	i     uint16
@@ -72,6 +74,10 @@ func (cpu *CPU) ReadInstruction(ram *RAM) Instruction {
 		return &LoadI{instruction}
 	case 0xB:
 		return &JumpV0{instruction}
+	case 0xC:
+		return &RND{instruction}
+	case 0xD:
+		return &Draw{instruction}
 	}
 	return instruction
 }

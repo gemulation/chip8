@@ -1,6 +1,9 @@
 package chip8
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+)
 
 type Instruction interface {
 	Execute()
@@ -436,4 +439,48 @@ func (j *JumpV0) Execute() {
 func (j *JumpV0) String() string {
 	nnn := (j.val & 0xFFF) + j.cpu.v[0]
 	return fmt.Sprintf("%04d - %04X - JP V0, %04X", j.pc, j.val, nnn)
+}
+
+// RND sets Vx = random byte AND kk.
+// Cxkk - RND Vx, byte
+// The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk.
+// The results are stored in Vx. See instruction 8xy2 for more information on AND.
+type RND struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (r *RND) Execute() {
+	x := (r.val >> 8) & 0xF
+	kk := r.val & 0xFF
+	r.cpu.v[x] = uint16(rand.Intn(255)) & kk // bitwise AND
+}
+
+func (r *RND) String() string {
+	x := (r.val >> 8) & 0xF
+	kk := r.val & 0xFF
+	return fmt.Sprintf("%04X - %04X - RND V%X, %04X", r.pc, r.val, x, kk)
+}
+
+// Draw displays n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+// Dxyn - DRW Vx, Vy, nibble
+// The interpreter reads n bytes from memory, starting at the address stored in I.
+// These bytes are then displayed as sprites on screen at coordinates (Vx, Vy).
+// Sprites are XORed onto the existing screen.
+// If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0.
+// If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen.
+// See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
+type Draw struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (d *Draw) Execute() {
+	// x := (d.val >> 8) & 0xF
+	// y := (d.val >> 4) & 0xF
+	// n := (d.val) & 0xF
+	// TODO: implement
+}
+
+func (d *Draw) String() string {
+	x := (d.val >> 8) & 0xF
+	y := (d.val >> 4) & 0xF
+	n := (d.val) & 0xF
+	return fmt.Sprintf("%04X - %04X - DRW V%X, V%X, %04X", d.pc, d.val, x, y, n)
 }
