@@ -22,7 +22,7 @@ func (cpu *CPU) ReadInstruction(ram *RAM) Instruction {
 	if val == 0 {
 		return nil
 	}
-	instruction := &BaseInstruction{cpu: cpu, ram: ram, val: val, pc: cpu.pc}
+	instruction := &BaseInstruction{cpu: cpu, ram: ram, val: val, addr: cpu.pc}
 	cpu.pc += InstructionSize
 
 	switch (val >> 12) & 0xF {

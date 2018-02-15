@@ -11,10 +11,10 @@ type Instruction interface {
 }
 
 type BaseInstruction struct {
-	cpu *CPU
-	ram *RAM
-	val uint16
-	pc  uint16
+	cpu  *CPU
+	ram  *RAM
+	val  uint16
+	addr uint16
 }
 
 // Execute the instruction.
@@ -23,7 +23,7 @@ func (b *BaseInstruction) Execute() {
 }
 
 func (b *BaseInstruction) String() string {
-	return fmt.Sprintf("%04X - %04X", b.pc, b.val)
+	return fmt.Sprintf("%04X - %04X", b.addr, b.val)
 }
 
 // Clear the display.
@@ -51,7 +51,7 @@ func (r *Return) Execute() {
 }
 
 func (r *Return) String() string {
-	return fmt.Sprintf("%04X - %04X - RET", r.pc, r.val)
+	return fmt.Sprintf("%04X - %04X - RET", r.addr, r.val)
 }
 
 // Jump to location nnn.
@@ -67,7 +67,7 @@ func (j *Jump) Execute() {
 
 func (j *Jump) String() string {
 	nnn := j.val & 0xFFF
-	return fmt.Sprintf("%04X - %04X - JP %04X", j.pc, j.val, nnn)
+	return fmt.Sprintf("%04X - %04X - JP %04X", j.addr, j.val, nnn)
 }
 
 // Call subroutine at nnn.
@@ -86,7 +86,7 @@ func (c *Call) Execute() {
 
 func (c *Call) String() string {
 	nnn := c.val & 0xFFF
-	return fmt.Sprintf("%04X - %04X - CALL %04X", c.pc, c.val, nnn)
+	return fmt.Sprintf("%04X - %04X - CALL %04X", c.addr, c.val, nnn)
 }
 
 // SkipX skips next instruction if Vx = kk.
@@ -106,7 +106,7 @@ func (s *SkipX) Execute() {
 func (s *SkipX) String() string {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
-	return fmt.Sprintf("%04X - %04X - SE V%X, %04X", s.pc, s.val, x, kk)
+	return fmt.Sprintf("%04X - %04X - SE V%X, %04X", s.addr, s.val, x, kk)
 }
 
 // SkipNotX skips next instruction if Vx != kk.
@@ -126,7 +126,7 @@ func (s *SkipNotX) Execute() {
 func (s *SkipNotX) String() string {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
-	return fmt.Sprintf("%04X - %04X - SNE V%X, %04X", s.pc, s.val, x, kk)
+	return fmt.Sprintf("%04X - %04X - SNE V%X, %04X", s.addr, s.val, x, kk)
 }
 
 // SkipXY skips next instruction if Vx = Vy.
@@ -146,7 +146,7 @@ func (s *SkipXY) Execute() {
 func (s *SkipXY) String() string {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - SE V%X, Vy%d", s.pc, s.val, x, y)
+	return fmt.Sprintf("%04X - %04X - SE V%X, Vy%d", s.addr, s.val, x, y)
 }
 
 // LoadX sets Vx = kk.
@@ -164,7 +164,7 @@ func (l *LoadX) Execute() {
 func (l *LoadX) String() string {
 	x := (l.val >> 8) & 0xF
 	kk := l.val & 0xFF
-	return fmt.Sprintf("%04X - %04X - LD V%X, %04X", l.pc, l.val, x, kk)
+	return fmt.Sprintf("%04X - %04X - LD V%X, %04X", l.addr, l.val, x, kk)
 }
 
 // AddX sets Vx = Vx + kk.
@@ -182,7 +182,7 @@ func (a *AddX) Execute() {
 func (a *AddX) String() string {
 	x := (a.val >> 8) & 0xF
 	kk := a.val & 0xFF
-	return fmt.Sprintf("%04X - %04X - ADD V%X, %04X", a.pc, a.val, x, kk)
+	return fmt.Sprintf("%04X - %04X - ADD V%X, %04X", a.addr, a.val, x, kk)
 }
 
 // LoadXY sets Vx = Vy.
@@ -200,7 +200,7 @@ func (l *LoadXY) Execute() {
 func (l *LoadXY) String() string {
 	x := (l.val >> 8) & 0xF
 	y := (l.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - LD V%X, V%X", l.pc, l.val, x, y)
+	return fmt.Sprintf("%04X - %04X - LD V%X, V%X", l.addr, l.val, x, y)
 }
 
 // OR sets Vx = Vx OR Vy.
@@ -220,7 +220,7 @@ func (o *OR) Execute() {
 func (o *OR) String() string {
 	x := (o.val >> 8) & 0xF
 	y := (o.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - OR V%X, V%X", o.pc, o.val, x, y)
+	return fmt.Sprintf("%04X - %04X - OR V%X, V%X", o.addr, o.val, x, y)
 }
 
 // AND sets Vx = Vx AND Vy.
@@ -240,7 +240,7 @@ func (a *AND) Execute() {
 func (a *AND) String() string {
 	x := (a.val >> 8) & 0xF
 	y := (a.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - AND V%X, V%X", a.pc, a.val, x, y)
+	return fmt.Sprintf("%04X - %04X - AND V%X, V%X", a.addr, a.val, x, y)
 }
 
 // XOR sets Vx = Vx XOR Vy.
@@ -260,7 +260,7 @@ func (r *XOR) Execute() {
 func (r *XOR) String() string {
 	x := (r.val >> 8) & 0xF
 	y := (r.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - XOR V%X, V%X", r.pc, r.val, x, y)
+	return fmt.Sprintf("%04X - %04X - XOR V%X, V%X", r.addr, r.val, x, y)
 }
 
 // AddXY sets Vx = Vx + Vy, set VF = carry.
@@ -288,7 +288,7 @@ func (a *AddXY) Execute() {
 func (a *AddXY) String() string {
 	x := (a.val >> 8) & 0xF
 	y := (a.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - ADD V%X, V%X", a.pc, a.val, x, y)
+	return fmt.Sprintf("%04X - %04X - ADD V%X, V%X", a.addr, a.val, x, y)
 }
 
 // SubXY sets Vx = Vx - Vy, set VF = NOT borrow.
@@ -314,7 +314,7 @@ func (s *SubXY) Execute() {
 func (s *SubXY) String() string {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - SUB V%X, V%X", s.pc, s.val, x, y)
+	return fmt.Sprintf("%04X - %04X - SUB V%X, V%X", s.addr, s.val, x, y)
 }
 
 // SHR sets Vx = Vx SHR 1.
@@ -337,7 +337,7 @@ func (s *SHR) Execute() {
 func (s *SHR) String() string {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - SHR V%X {, V%X}", s.pc, s.val, x, y)
+	return fmt.Sprintf("%04X - %04X - SHR V%X {, V%X}", s.addr, s.val, x, y)
 }
 
 // SubN set Vx = Vy - Vx, set VF = NOT borrow.
@@ -363,7 +363,7 @@ func (s *SubN) Execute() {
 func (s *SubN) String() string {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - SUBN V%X, V%X", s.pc, s.val, x, y)
+	return fmt.Sprintf("%04X - %04X - SUBN V%X, V%X", s.addr, s.val, x, y)
 }
 
 // SHL sets Vx = Vx SHL 1.
@@ -386,7 +386,7 @@ func (s *SHL) Execute() {
 func (s *SHL) String() string {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - SHL V%X {, V%X}", s.pc, s.val, x, y)
+	return fmt.Sprintf("%04X - %04X - SHL V%X {, V%X}", s.addr, s.val, x, y)
 }
 
 // SkipNotXY skips next instruction if Vx != Vy.
@@ -406,7 +406,7 @@ func (s *SkipNotXY) Execute() {
 func (s *SkipNotXY) String() string {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - SNE V%X, V%X", s.pc, s.val, x, y)
+	return fmt.Sprintf("%04X - %04X - SNE V%X, V%X", s.addr, s.val, x, y)
 }
 
 // LoadI sets I = nnn.
@@ -422,7 +422,7 @@ func (l *LoadI) Execute() {
 
 func (l *LoadI) String() string {
 	nnn := l.val & 0xFFF
-	return fmt.Sprintf("%04X - %04X - LD I, %04X", l.pc, l.val, nnn)
+	return fmt.Sprintf("%04X - %04X - LD I, %04X", l.addr, l.val, nnn)
 }
 
 // JumpV0 jumps to location nnn + V0.
@@ -438,7 +438,7 @@ func (j *JumpV0) Execute() {
 
 func (j *JumpV0) String() string {
 	nnn := (j.val & 0xFFF) + j.cpu.v[0]
-	return fmt.Sprintf("%04d - %04X - JP V0, %04X", j.pc, j.val, nnn)
+	return fmt.Sprintf("%04d - %04X - JP V0, %04X", j.addr, j.val, nnn)
 }
 
 // RND sets Vx = random byte AND kk.
@@ -457,7 +457,7 @@ func (r *RND) Execute() {
 func (r *RND) String() string {
 	x := (r.val >> 8) & 0xF
 	kk := r.val & 0xFF
-	return fmt.Sprintf("%04X - %04X - RND V%X, %04X", r.pc, r.val, x, kk)
+	return fmt.Sprintf("%04X - %04X - RND V%X, %04X", r.addr, r.val, x, kk)
 }
 
 // Draw displays n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
@@ -482,5 +482,5 @@ func (d *Draw) String() string {
 	x := (d.val >> 8) & 0xF
 	y := (d.val >> 4) & 0xF
 	n := (d.val) & 0xF
-	return fmt.Sprintf("%04X - %04X - DRW V%X, V%X, %04X", d.pc, d.val, x, y, n)
+	return fmt.Sprintf("%04X - %04X - DRW V%X, V%X, %04X", d.addr, d.val, x, y, n)
 }
