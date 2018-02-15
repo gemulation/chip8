@@ -48,7 +48,7 @@ func (r *Return) Execute() {
 }
 
 func (r *Return) String() string {
-	return fmt.Sprintf("%04d - %04X - RET", r.pc, r.val)
+	return fmt.Sprintf("%04X - %04X - RET", r.pc, r.val)
 }
 
 // Jump to location nnn.
@@ -64,7 +64,7 @@ func (j *Jump) Execute() {
 
 func (j *Jump) String() string {
 	nnn := j.val & 0xFFF
-	return fmt.Sprintf("%04d - %04X - JP %04X", j.pc, j.val, nnn)
+	return fmt.Sprintf("%04X - %04X - JP %04X", j.pc, j.val, nnn)
 }
 
 // Call subroutine at nnn.
@@ -384,4 +384,56 @@ func (s *SHL) String() string {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
 	return fmt.Sprintf("%04X - %04X - SHL V%X {, V%X}", s.pc, s.val, x, y)
+}
+
+// SkipNotXY skips next instruction if Vx != Vy.
+// 9xy0 - SNE Vx, Vy
+// The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
+type SkipNotXY struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SkipNotXY) Execute() {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	if s.cpu.v[x] != s.cpu.v[y] {
+		s.cpu.pc += InstructionSize // skip one instruction
+	}
+}
+
+func (s *SkipNotXY) String() string {
+	x := (s.val >> 8) & 0xF
+	y := (s.val >> 4) & 0xF
+	return fmt.Sprintf("%04X - %04X - SNE V%X, V%X", s.pc, s.val, x, y)
+}
+
+// LoadI sets I = nnn.
+// Annn - LD I, addr
+// The value of register I is set to nnn.
+type LoadI struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (l *LoadI) Execute() {
+	nnn := l.val & 0xFFF
+	l.cpu.i = nnn
+}
+
+func (l *LoadI) String() string {
+	nnn := l.val & 0xFFF
+	return fmt.Sprintf("%04X - %04X - LD I, %04X", l.pc, l.val, nnn)
+}
+
+// JumpV0 jumps to location nnn + V0.
+// Bnnn - JP V0, addr
+// The program counter is set to nnn plus the value of V0.
+type JumpV0 struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (j *JumpV0) Execute() {
+	nnn := (j.val & 0xFFF) + j.cpu.v[0]
+	j.cpu.pc = nnn
+}
+
+func (j *JumpV0) String() string {
+	nnn := (j.val & 0xFFF) + j.cpu.v[0]
+	return fmt.Sprintf("%04d - %04X - JP V0, %04X", j.pc, j.val, nnn)
 }
