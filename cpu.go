@@ -89,6 +89,13 @@ func (cpu *CPU) ReadInstruction(emulator *Emulator) Instruction {
 		return &RND{instruction}
 	case 0xD:
 		return &Draw{instruction}
+	case 0xE:
+		switch val & 0xFF {
+		case 0x9E:
+			return &SkipKey{instruction}
+		case 0xA1:
+			return &SkipNotKey{instruction}
+		}
 	}
 	return instruction
 }

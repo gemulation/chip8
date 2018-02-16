@@ -497,3 +497,39 @@ func (d *Draw) String() string {
 	n := (d.val) & 0xF
 	return fmt.Sprintf("%04X - %04X - DRW V%X, V%X, %04X", d.addr, d.val, x, y, n)
 }
+
+// SkipKey skips next instruction if key with the value of Vx is pressed.
+// Ex9E - SKP Vx
+// Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
+type SkipKey struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SkipKey) Execute() {
+	x := (s.val >> 8) & 0xF
+	if s.emulator.keys[x] {
+		s.emulator.cpu.pc += InstructionSize // skip one instruction
+	}
+}
+
+func (s *SkipKey) String() string {
+	x := (s.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - SKP V%X", s.addr, s.val, x)
+}
+
+// SkipNotKey skips next instruction if key with the value of Vx is not pressed.
+// ExA1 - SKNP Vx
+// Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
+type SkipNotKey struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SkipNotKey) Execute() {
+	x := (s.val >> 8) & 0xF
+	if !s.emulator.keys[x] {
+		s.emulator.cpu.pc += InstructionSize // skip one instruction
+	}
+}
+
+func (s *SkipNotKey) String() string {
+	x := (s.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - SKNP V%X", s.addr, s.val, x)
+}

@@ -7,6 +7,7 @@ import (
 )
 
 type Emulator struct {
+	keys    [KeyboardSize]bool
 	display *Display
 	ram     *RAM
 	cpu     *CPU
@@ -40,7 +41,7 @@ func (emulator *Emulator) Run() {
 				break
 			}
 			fmt.Println(instruction)
-			instruction.Execute()
+			// instruction.Execute()
 
 			emulator.cpu.UpdateTimers()
 		}
