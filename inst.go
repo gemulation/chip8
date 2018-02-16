@@ -470,10 +470,25 @@ type Draw struct{ *BaseInstruction }
 
 // Execute the instruction.
 func (d *Draw) Execute() {
-	// x := (d.val >> 8) & 0xF
-	// y := (d.val >> 4) & 0xF
-	// n := (d.val) & 0xF
-	// TODO: implement
+	x := d.emulator.cpu.v[(d.val>>8)&0xF]
+	y := d.emulator.cpu.v[(d.val>>4)&0xF]
+	height := d.val & 0xF
+
+	d.emulator.cpu.v[0xF] = 0
+	for yline := uint16(0); yline < height; yline++ {
+		pixel := d.emulator.ram.data[d.emulator.cpu.i+yline]
+		for xline := uint16(0); xline < 8; xline++ {
+			if (pixel & (0x80 >> xline)) != 0 {
+				index := x + xline + ((y + yline) * 64)
+				// check collision
+				if d.emulator.display.memory[index] == 1 {
+					d.emulator.cpu.v[0xF] = 1 // collision
+				}
+				// set pixel
+				d.emulator.display.memory[index] ^= 1
+			}
+		}
+	}
 }
 
 func (d *Draw) String() string {

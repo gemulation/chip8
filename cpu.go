@@ -3,9 +3,9 @@ package chip8
 type CPU struct {
 	stack [StackSize]uint16
 	v     [RegSize]uint16
-	dt    uint8
-	st    uint8
-	sp    uint8
+	dt    byte
+	st    byte
+	sp    byte
 	pc    uint16
 	i     uint16
 }

@@ -24,15 +24,22 @@ func NewEmulator(rom *ROM) *Emulator {
 
 func (emulator *Emulator) Run() {
 	pixelgl.Run(func() {
+
+		// display
 		emulator.display.Init()
-		emulator.ram.Load(emulator.rom)
+		emulator.display.Clear()
+
+		// memory
+		emulator.ram.LoadRom(emulator.rom)
+		emulator.ram.LoadFont(Font)
+
 		for {
 			instruction := emulator.cpu.ReadInstruction(emulator)
 			if instruction == nil {
 				break
 			}
 			fmt.Println(instruction)
-			// instruction.Execute()
+			instruction.Execute()
 			emulator.display.Update()
 		}
 	})
