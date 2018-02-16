@@ -3,11 +3,11 @@ package chip8
 type CPU struct {
 	stack [StackSize]uint16
 	v     [RegSize]uint16
-	dt    byte
-	st    byte
 	sp    byte
 	pc    uint16
 	i     uint16
+	dt    uint16
+	st    uint16
 }
 
 func NewCPU() *CPU {
@@ -95,6 +95,27 @@ func (cpu *CPU) ReadInstruction(emulator *Emulator) Instruction {
 			return &SkipKey{instruction}
 		case 0xA1:
 			return &SkipNotKey{instruction}
+		}
+	case 0xF:
+		switch val & 0xFF {
+		case 0x07:
+			return &GetDelayTimer{instruction}
+		case 0x0A:
+			return &WaitKey{instruction}
+		case 0x15:
+			return &SetDelayTimer{instruction}
+		case 0x18:
+			return &SetSoundTimer{instruction}
+		case 0x1E:
+			return &AddI{instruction}
+		case 0x29:
+			return &LoadSprite{instruction}
+		case 0x33:
+			return &StoreBCD{instruction}
+		case 0x55:
+			return &WriteMemory{instruction}
+		case 0x65:
+			return &ReadMemory{instruction}
 		}
 	}
 	return instruction

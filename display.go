@@ -23,7 +23,6 @@ type Display struct {
 
 func NewDisplay() *Display {
 	config := pixelgl.WindowConfig{
-		Title: "Chip 8",
 		Bounds: pixel.R(
 			0, 0,
 			DisplayWidth*DisplayScaleFactor,
@@ -34,37 +33,37 @@ func NewDisplay() *Display {
 	return &Display{config: config}
 }
 
-func (d *Display) Init() {
-	window, err := pixelgl.NewWindow(d.config)
+func (display *Display) Init() {
+	window, err := pixelgl.NewWindow(display.config)
 	if err != nil {
 		panic(err)
 	}
-	d.window = window
+	display.window = window
 
 	go func() {
-		for !d.window.Closed() {
+		for !display.window.Closed() {
 		}
 		os.Exit(0)
 	}()
 
 	go func() {
 		for {
-			d.Update()
+			display.Update()
 		}
 	}()
 }
 
-func (d *Display) Clear() {
-	d.window.Clear(colornames.Lightgreen)
+func (display *Display) Clear() {
 	for i := 0; i < DisplayWidth*DisplayHeight; i++ {
-		d.memory[i] = 0
+		display.memory[i] = 0
 	}
 }
 
-func (d *Display) Update() {
+func (display *Display) Update() {
+	display.window.Clear(colornames.Greenyellow)
 	for x := 0; x < DisplayWidth; x++ {
 		for y := 0; y < DisplayHeight; y++ {
-			if d.memory[y*DisplayWidth+x] == 1 {
+			if display.memory[y*DisplayWidth+x] == 1 {
 				x := float64(x * DisplayScaleFactor)
 				y := float64((DisplayHeight - y) * DisplayScaleFactor)
 
@@ -75,9 +74,9 @@ func (d *Display) Update() {
 				cube.Push(pixel.V(x+DisplayScaleFactor, y-DisplayScaleFactor))
 				cube.Push(pixel.V(x+DisplayScaleFactor, y))
 				cube.Polygon(0)
-				cube.Draw(d.window)
+				cube.Draw(display.window)
 			}
 		}
 	}
-	d.window.Update()
+	display.window.Update()
 }

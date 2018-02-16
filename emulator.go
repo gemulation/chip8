@@ -2,6 +2,7 @@ package chip8
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/faiface/pixel/pixelgl"
 )
@@ -25,7 +26,6 @@ func NewEmulator(rom *ROM) *Emulator {
 
 func (emulator *Emulator) Run() {
 	pixelgl.Run(func() {
-
 		// display
 		emulator.display.Init()
 		emulator.display.Clear()
@@ -41,9 +41,11 @@ func (emulator *Emulator) Run() {
 				break
 			}
 			fmt.Println(instruction)
-			// instruction.Execute()
-
+			instruction.Execute()
 			emulator.cpu.UpdateTimers()
+
+			// slow down processor
+			time.Sleep(1200 * time.Microsecond)
 		}
 	})
 }

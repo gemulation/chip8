@@ -7,4 +7,5 @@ const (
 	StackSize       = 16
 	KeyboardSize    = 16
 	InstructionSize = 2
+	SpriteSize      = 5
 )

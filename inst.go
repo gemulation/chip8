@@ -533,3 +533,156 @@ func (s *SkipNotKey) String() string {
 	x := (s.val >> 8) & 0xF
 	return fmt.Sprintf("%04X - %04X - SKNP V%X", s.addr, s.val, x)
 }
+
+// GetDelayTimer sets Vx = delay timer value.
+// Fx07 - LD Vx, DT
+// The value of DT is placed into Vx.
+type GetDelayTimer struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (g *GetDelayTimer) Execute() {
+	x := (g.val >> 8) & 0xF
+	g.emulator.cpu.v[x] = g.emulator.cpu.dt
+}
+
+func (g *GetDelayTimer) String() string {
+	x := (g.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - LD V%X, DT", g.addr, g.val, x)
+}
+
+// WaitKey wait for a key press, store the value of the key in Vx.
+// Fx0A - LD Vx, K
+// All execution stops until a key is pressed, then the value of that key is stored in Vx.
+type WaitKey struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (w *WaitKey) Execute() {
+	// x := (w.val >> 8) & 0xF
+}
+
+func (w *WaitKey) String() string {
+	x := (w.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - LD V%X, K", w.addr, w.val, x)
+}
+
+// SetDelayTimer sets delay timer = Vx.
+// Fx15 - LD DT, Vx
+// DT is set equal to the value of Vx.
+type SetDelayTimer struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SetDelayTimer) Execute() {
+	x := (s.val >> 8) & 0xF
+	s.emulator.cpu.dt = s.emulator.cpu.v[x]
+}
+
+func (s *SetDelayTimer) String() string {
+	x := (s.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - LD DT, V%X", s.addr, s.val, x)
+}
+
+// SetSoundTimer sets sound timer = Vx.
+// Fx18 - LD ST, Vx
+// ST is set equal to the value of Vx.
+type SetSoundTimer struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *SetSoundTimer) Execute() {
+	x := (s.val >> 8) & 0xF
+	s.emulator.cpu.st = s.emulator.cpu.v[x]
+}
+
+func (s *SetSoundTimer) String() string {
+	x := (s.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - LD ST, V%X", s.addr, s.val, x)
+}
+
+// AddI sets I = I + Vx.
+// Fx1E - ADD I, Vx
+// The values of I and Vx are added, and the results are stored in I.
+type AddI struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (a *AddI) Execute() {
+	x := (a.val >> 8) & 0xF
+	a.emulator.cpu.i += a.emulator.cpu.v[x]
+}
+
+func (a *AddI) String() string {
+	x := (a.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - ADD I, V%X", a.addr, a.val, x)
+}
+
+// LoadSprite sets I = location of sprite for digit Vx.
+// Fx29 - LD F, Vx
+// The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx.
+// See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
+type LoadSprite struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (l *LoadSprite) Execute() {
+	x := (l.val >> 8) & 0xF
+	l.emulator.cpu.i = l.emulator.cpu.v[x] * SpriteSize
+}
+
+func (l *LoadSprite) String() string {
+	x := (l.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - LD F, V%X", l.addr, l.val, x)
+}
+
+// StoreBCD stores the BCD representation of Vx in memory locations I, I+1, and I+2.
+// Fx33 - LD B, Vx
+// The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I,
+// the tens digit at location I+1, and the ones digit at location I+2.
+type StoreBCD struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (s *StoreBCD) Execute() {
+	x := (s.val >> 8) & 0xF
+	vx := s.emulator.cpu.v[x]
+	i := s.emulator.cpu.i
+	s.emulator.ram.data[i] = byte(vx / 100)
+	s.emulator.ram.data[i+1] = byte((vx / 10) % 10)
+	s.emulator.ram.data[i+2] = byte((vx % 100) % 10)
+}
+
+func (s *StoreBCD) String() string {
+	x := (s.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - LD B, V%X", s.addr, s.val, x)
+}
+
+// WriteMemory stores registers V0 through Vx in memory starting at location I.
+// Fx55 - LD [I], Vx
+// The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
+type WriteMemory struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (w *WriteMemory) Execute() {
+	x := (w.val >> 8) & 0xF
+	for i := uint16(0); i <= x; i++ {
+		w.emulator.ram.data[w.emulator.cpu.i+i] = byte(w.emulator.cpu.v[i])
+	}
+}
+
+func (w *WriteMemory) String() string {
+	x := (w.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - LD [I], V%X", w.addr, w.val, x)
+}
+
+// ReadMemory reads registers V0 through Vx from memory starting at location I.
+// Fx65 - LD Vx, [I]
+// The interpreter reads values from memory starting at location I into registers V0 through Vx.
+type ReadMemory struct{ *BaseInstruction }
+
+// Execute the instruction.
+func (l *ReadMemory) Execute() {
+	x := (l.val >> 8) & 0xF
+	for i := uint16(0); i <= x; i++ {
+		l.emulator.cpu.v[i] = uint16(l.emulator.ram.data[l.emulator.cpu.i+i])
+	}
+}
+
+func (l *ReadMemory) String() string {
+	x := (l.val >> 8) & 0xF
+	return fmt.Sprintf("%04X - %04X - LD V%X, [I]", l.addr, l.val, x)
+}
