@@ -1,6 +1,8 @@
 package chip8
 
 import (
+	"os"
+
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
@@ -38,6 +40,18 @@ func (d *Display) Init() {
 		panic(err)
 	}
 	d.window = window
+
+	go func() {
+		for !d.window.Closed() {
+		}
+		os.Exit(0)
+	}()
+
+	go func() {
+		for {
+			d.Update()
+		}
+	}()
 }
 
 func (d *Display) Clear() {

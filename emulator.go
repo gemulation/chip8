@@ -28,6 +28,7 @@ func (emulator *Emulator) Run() {
 		// display
 		emulator.display.Init()
 		emulator.display.Clear()
+		emulator.display.window.SetTitle(emulator.rom.Name)
 
 		// memory
 		emulator.ram.LoadRom(emulator.rom)
@@ -40,7 +41,7 @@ func (emulator *Emulator) Run() {
 			}
 			fmt.Println(instruction)
 			instruction.Execute()
-			emulator.display.Update()
 		}
+
 	})
 }
