@@ -41,7 +41,19 @@ func (emulator *Emulator) Run() {
 			}
 			fmt.Println(instruction)
 			instruction.Execute()
-		}
 
+			// delta timer
+			if emulator.cpu.dt > 0 {
+				emulator.cpu.dt--
+			}
+
+			// sound timer
+			if emulator.cpu.st > 0 {
+				if emulator.cpu.st == 1 {
+					// TODO: play sound
+				}
+				emulator.cpu.st--
+			}
+		}
 	})
 }

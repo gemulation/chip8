@@ -56,6 +56,9 @@ func (d *Display) Init() {
 
 func (d *Display) Clear() {
 	d.window.Clear(colornames.Lightgreen)
+	for i := 0; i < DisplayWidth*DisplayHeight; i++ {
+		d.memory[i] = 0
+	}
 }
 
 func (d *Display) Update() {
@@ -63,13 +66,13 @@ func (d *Display) Update() {
 		for y := 0; y < DisplayHeight; y++ {
 			if d.memory[y*DisplayWidth+x] == 1 {
 				x := float64(x * DisplayScaleFactor)
-				y := float64(y * DisplayScaleFactor)
+				y := float64((DisplayHeight - y) * DisplayScaleFactor)
 
 				cube := imdraw.New(nil)
 				cube.Color = colornames.Black
 				cube.Push(pixel.V(x, y))
-				cube.Push(pixel.V(x, y+DisplayScaleFactor))
-				cube.Push(pixel.V(x+DisplayScaleFactor, y+DisplayScaleFactor))
+				cube.Push(pixel.V(x, y-DisplayScaleFactor))
+				cube.Push(pixel.V(x+DisplayScaleFactor, y-DisplayScaleFactor))
 				cube.Push(pixel.V(x+DisplayScaleFactor, y))
 				cube.Polygon(0)
 				cube.Draw(d.window)
