@@ -15,6 +15,17 @@ func NewCPU() *CPU {
 		pc: ProgramLocation,
 	}
 }
+func (cpu *CPU) UpdateTimers() {
+	if cpu.dt > 0 {
+		cpu.dt--
+	}
+	if cpu.st > 0 {
+		if cpu.st == 1 {
+			// TODO: play sound
+		}
+		cpu.st--
+	}
+}
 
 func (cpu *CPU) ReadInstruction(emulator *Emulator) Instruction {
 	// read 2 bytes integer in little endian format
