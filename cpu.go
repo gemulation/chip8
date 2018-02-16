@@ -16,13 +16,13 @@ func NewCPU() *CPU {
 	}
 }
 
-func (cpu *CPU) ReadInstruction(ram *RAM) Instruction {
+func (cpu *CPU) ReadInstruction(emulator *Emulator) Instruction {
 	// read 2 bytes integer in little endian format
-	val := (uint16(ram.data[cpu.pc]) << 8) | uint16(ram.data[cpu.pc+1])
+	val := (uint16(emulator.ram.data[cpu.pc]) << 8) | uint16(emulator.ram.data[cpu.pc+1])
 	if val == 0 {
 		return nil
 	}
-	instruction := &BaseInstruction{cpu: cpu, ram: ram, val: val, addr: cpu.pc}
+	instruction := &BaseInstruction{emulator: emulator, val: val, addr: cpu.pc}
 	cpu.pc += InstructionSize
 
 	switch (val >> 12) & 0xF {

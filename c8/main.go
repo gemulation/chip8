@@ -13,7 +13,5 @@ func main() {
 	}
 
 	emulator := chip8.NewEmulator(rom)
-	if err := emulator.Run(); err != nil {
-		panic(err)
-	}
+	emulator.Run()
 }

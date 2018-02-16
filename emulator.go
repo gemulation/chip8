@@ -1,30 +1,39 @@
 package chip8
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/faiface/pixel/pixelgl"
+)
 
 type Emulator struct {
-	ram *RAM
-	cpu *CPU
-	rom *ROM
+	display *Display
+	ram     *RAM
+	cpu     *CPU
+	rom     *ROM
 }
 
 func NewEmulator(rom *ROM) *Emulator {
 	return &Emulator{
-		ram: NewRAM(),
-		cpu: NewCPU(),
-		rom: rom,
+		display: NewDisplay(),
+		ram:     NewRAM(),
+		cpu:     NewCPU(),
+		rom:     rom,
 	}
 }
 
-func (emulator *Emulator) Run() error {
-	emulator.ram.Load(emulator.rom)
-	for {
-		instruction := emulator.cpu.ReadInstruction(emulator.ram)
-		if instruction == nil {
-			break
+func (emulator *Emulator) Run() {
+	pixelgl.Run(func() {
+		emulator.display.Init()
+		emulator.ram.Load(emulator.rom)
+		for {
+			instruction := emulator.cpu.ReadInstruction(emulator)
+			if instruction == nil {
+				break
+			}
+			fmt.Println(instruction)
+			// instruction.Execute()
+			emulator.display.Update()
 		}
-		fmt.Println(instruction)
-		// instruction.Execute()
-	}
-	return nil
+	})
 }

@@ -11,15 +11,13 @@ type Instruction interface {
 }
 
 type BaseInstruction struct {
-	cpu  *CPU
-	ram  *RAM
-	val  uint16
-	addr uint16
+	emulator *Emulator
+	val      uint16
+	addr     uint16
 }
 
 // Execute the instruction.
 func (b *BaseInstruction) Execute() {
-
 }
 
 func (b *BaseInstruction) String() string {
@@ -32,7 +30,7 @@ type Clear struct{ *BaseInstruction }
 
 // Execute the instruction.
 func (c *Clear) Execute() {
-
+	c.emulator.display.Clear()
 }
 
 func (c *Clear) String() string {
@@ -46,8 +44,8 @@ type Return struct{ *BaseInstruction }
 
 // Execute the instruction.
 func (r *Return) Execute() {
-	r.cpu.pc = r.cpu.stack[r.cpu.sp] // retrieve the program counter from the call stack
-	r.cpu.sp--                       // decrement the stack
+	r.emulator.cpu.pc = r.emulator.cpu.stack[r.emulator.cpu.sp] // retrieve the program counter from the call stack
+	r.emulator.cpu.sp--                                         // decrement the stack
 }
 
 func (r *Return) String() string {
@@ -62,7 +60,7 @@ type Jump struct{ *BaseInstruction }
 // Execute the instruction.
 func (j *Jump) Execute() {
 	nnn := j.val & 0xFFF
-	j.cpu.pc = nnn
+	j.emulator.cpu.pc = nnn
 }
 
 func (j *Jump) String() string {
@@ -79,9 +77,9 @@ type Call struct{ *BaseInstruction }
 // Execute the instruction.
 func (c *Call) Execute() {
 	nnn := c.val & 0xFFF
-	c.cpu.sp++                       // increment the stack
-	c.cpu.stack[c.cpu.sp] = c.cpu.pc // store the program counter on the call stack
-	c.cpu.pc = nnn                   // set the program counter to the call address
+	c.emulator.cpu.sp++                                         // increment the stack
+	c.emulator.cpu.stack[c.emulator.cpu.sp] = c.emulator.cpu.pc // store the program counter on the call stack
+	c.emulator.cpu.pc = nnn                                     // set the program counter to the call address
 }
 
 func (c *Call) String() string {
@@ -98,8 +96,8 @@ type SkipX struct{ *BaseInstruction }
 func (s *SkipX) Execute() {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
-	if s.cpu.v[x] == kk {
-		s.cpu.pc += InstructionSize // skip one instruction
+	if s.emulator.cpu.v[x] == kk {
+		s.emulator.cpu.pc += InstructionSize // skip one instruction
 	}
 }
 
@@ -118,8 +116,8 @@ type SkipNotX struct{ *BaseInstruction }
 func (s *SkipNotX) Execute() {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
-	if s.cpu.v[x] != kk {
-		s.cpu.pc += InstructionSize // skip one instruction
+	if s.emulator.cpu.v[x] != kk {
+		s.emulator.cpu.pc += InstructionSize // skip one instruction
 	}
 }
 
@@ -138,8 +136,8 @@ type SkipXY struct{ *BaseInstruction }
 func (s *SkipXY) Execute() {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	if s.cpu.v[x] == s.cpu.v[y] {
-		s.cpu.pc += InstructionSize // skip one instruction
+	if s.emulator.cpu.v[x] == s.emulator.cpu.v[y] {
+		s.emulator.cpu.pc += InstructionSize // skip one instruction
 	}
 }
 
@@ -158,7 +156,7 @@ type LoadX struct{ *BaseInstruction }
 func (l *LoadX) Execute() {
 	x := (l.val >> 8) & 0xF
 	kk := l.val & 0xFF
-	l.cpu.v[x] = kk // load register
+	l.emulator.cpu.v[x] = kk // load register
 }
 
 func (l *LoadX) String() string {
@@ -176,7 +174,7 @@ type AddX struct{ *BaseInstruction }
 func (a *AddX) Execute() {
 	x := (a.val >> 8) & 0xF
 	kk := a.val & 0xFF
-	a.cpu.v[x] += kk // add value to register
+	a.emulator.cpu.v[x] += kk // add value to register
 }
 
 func (a *AddX) String() string {
@@ -194,7 +192,7 @@ type LoadXY struct{ *BaseInstruction }
 func (l *LoadXY) Execute() {
 	x := (l.val >> 8) & 0xF
 	y := (l.val >> 4) & 0xF
-	l.cpu.v[x] = l.cpu.v[y] // copy register
+	l.emulator.cpu.v[x] = l.emulator.cpu.v[y] // copy register
 }
 
 func (l *LoadXY) String() string {
@@ -214,7 +212,7 @@ type OR struct{ *BaseInstruction }
 func (o *OR) Execute() {
 	x := (o.val >> 8) & 0xF
 	y := (o.val >> 4) & 0xF
-	o.cpu.v[x] |= o.cpu.v[y] // bitwise OR
+	o.emulator.cpu.v[x] |= o.emulator.cpu.v[y] // bitwise OR
 }
 
 func (o *OR) String() string {
@@ -234,7 +232,7 @@ type AND struct{ *BaseInstruction }
 func (a *AND) Execute() {
 	x := (a.val >> 8) & 0xF
 	y := (a.val >> 4) & 0xF
-	a.cpu.v[x] &= a.cpu.v[y] // bitwise AND
+	a.emulator.cpu.v[x] &= a.emulator.cpu.v[y] // bitwise AND
 }
 
 func (a *AND) String() string {
@@ -254,7 +252,7 @@ type XOR struct{ *BaseInstruction }
 func (r *XOR) Execute() {
 	x := (r.val >> 8) & 0xF
 	y := (r.val >> 4) & 0xF
-	r.cpu.v[x] ^= r.cpu.v[y] // bitwise XOR
+	r.emulator.cpu.v[x] ^= r.emulator.cpu.v[y] // bitwise XOR
 }
 
 func (r *XOR) String() string {
@@ -273,16 +271,16 @@ type AddXY struct{ *BaseInstruction }
 func (a *AddXY) Execute() {
 	x := (a.val >> 8) & 0xF
 	y := (a.val >> 4) & 0xF
-	xy := a.cpu.v[x] + a.cpu.v[y]
+	xy := a.emulator.cpu.v[x] + a.emulator.cpu.v[y]
 
 	// set VF with the carry
-	a.cpu.v[0xF] = 0
+	a.emulator.cpu.v[0xF] = 0
 	if xy > 0xFF {
-		a.cpu.v[0xF] = 1
+		a.emulator.cpu.v[0xF] = 1
 	}
 
 	// only the lowest 8 bits of the result are kept, and stored in Vx.
-	a.cpu.v[x] = xy & 0xFF
+	a.emulator.cpu.v[x] = xy & 0xFF
 }
 
 func (a *AddXY) String() string {
@@ -300,15 +298,15 @@ type SubXY struct{ *BaseInstruction }
 func (s *SubXY) Execute() {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	xy := s.cpu.v[x] - s.cpu.v[y]
+	xy := s.emulator.cpu.v[x] - s.emulator.cpu.v[y]
 
 	// set VF with NOT borrow
-	s.cpu.v[0xF] = 0
-	if s.cpu.v[x] > s.cpu.v[y] {
-		s.cpu.v[0xF] = 1
+	s.emulator.cpu.v[0xF] = 0
+	if s.emulator.cpu.v[x] > s.emulator.cpu.v[y] {
+		s.emulator.cpu.v[0xF] = 1
 	}
 
-	s.cpu.v[x] = xy
+	s.emulator.cpu.v[x] = xy
 }
 
 func (s *SubXY) String() string {
@@ -326,12 +324,12 @@ type SHR struct{ *BaseInstruction }
 func (s *SHR) Execute() {
 	x := (s.val >> 8) & 0xF
 
-	s.cpu.v[0xF] = 0
-	if s.cpu.v[x]&1 == 1 {
-		s.cpu.v[0xF] = 1
+	s.emulator.cpu.v[0xF] = 0
+	if s.emulator.cpu.v[x]&1 == 1 {
+		s.emulator.cpu.v[0xF] = 1
 	}
 
-	s.cpu.v[x] /= 2
+	s.emulator.cpu.v[x] /= 2
 }
 
 func (s *SHR) String() string {
@@ -349,15 +347,15 @@ type SubN struct{ *BaseInstruction }
 func (s *SubN) Execute() {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	yx := s.cpu.v[y] - s.cpu.v[x]
+	yx := s.emulator.cpu.v[y] - s.emulator.cpu.v[x]
 
 	// set VF with NOT borrow
-	s.cpu.v[0xF] = 0
-	if s.cpu.v[y] > s.cpu.v[x] {
-		s.cpu.v[0xF] = 1
+	s.emulator.cpu.v[0xF] = 0
+	if s.emulator.cpu.v[y] > s.emulator.cpu.v[x] {
+		s.emulator.cpu.v[0xF] = 1
 	}
 
-	s.cpu.v[x] = yx
+	s.emulator.cpu.v[x] = yx
 }
 
 func (s *SubN) String() string {
@@ -375,12 +373,12 @@ type SHL struct{ *BaseInstruction }
 func (s *SHL) Execute() {
 	x := (s.val >> 8) & 0xF
 
-	s.cpu.v[0xF] = 0
-	if (s.cpu.v[x]>>3)&1 == 1 {
-		s.cpu.v[0xF] = 1
+	s.emulator.cpu.v[0xF] = 0
+	if (s.emulator.cpu.v[x]>>3)&1 == 1 {
+		s.emulator.cpu.v[0xF] = 1
 	}
 
-	s.cpu.v[x] *= 2
+	s.emulator.cpu.v[x] *= 2
 }
 
 func (s *SHL) String() string {
@@ -398,8 +396,8 @@ type SkipNotXY struct{ *BaseInstruction }
 func (s *SkipNotXY) Execute() {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	if s.cpu.v[x] != s.cpu.v[y] {
-		s.cpu.pc += InstructionSize // skip one instruction
+	if s.emulator.cpu.v[x] != s.emulator.cpu.v[y] {
+		s.emulator.cpu.pc += InstructionSize // skip one instruction
 	}
 }
 
@@ -417,7 +415,7 @@ type LoadI struct{ *BaseInstruction }
 // Execute the instruction.
 func (l *LoadI) Execute() {
 	nnn := l.val & 0xFFF
-	l.cpu.i = nnn
+	l.emulator.cpu.i = nnn
 }
 
 func (l *LoadI) String() string {
@@ -432,12 +430,12 @@ type JumpV0 struct{ *BaseInstruction }
 
 // Execute the instruction.
 func (j *JumpV0) Execute() {
-	nnn := (j.val & 0xFFF) + j.cpu.v[0]
-	j.cpu.pc = nnn
+	nnn := (j.val & 0xFFF) + j.emulator.cpu.v[0]
+	j.emulator.cpu.pc = nnn
 }
 
 func (j *JumpV0) String() string {
-	nnn := (j.val & 0xFFF) + j.cpu.v[0]
+	nnn := (j.val & 0xFFF) + j.emulator.cpu.v[0]
 	return fmt.Sprintf("%04d - %04X - JP V0, %04X", j.addr, j.val, nnn)
 }
 
@@ -451,7 +449,7 @@ type RND struct{ *BaseInstruction }
 func (r *RND) Execute() {
 	x := (r.val >> 8) & 0xF
 	kk := r.val & 0xFF
-	r.cpu.v[x] = uint16(rand.Intn(255)) & kk // bitwise AND
+	r.emulator.cpu.v[x] = uint16(rand.Intn(255)) & kk // bitwise AND
 }
 
 func (r *RND) String() string {
