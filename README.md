@@ -7,5 +7,6 @@
 
 ## Screenshots
 
-![invaders](https://github.com/gemulation/chip8/raw/master/images/invaders.gif)
+### Brix
+![brix](https://github.com/gemulation/chip8/raw/master/images/brix.gif)
 

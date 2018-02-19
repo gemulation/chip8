@@ -9,12 +9,6 @@ import (
 	"golang.org/x/image/colornames"
 )
 
-const (
-	DisplayWidth       = 64
-	DisplayHeight      = 32
-	DisplayScaleFactor = 20
-)
-
 type Display struct {
 	config pixelgl.WindowConfig
 	window *pixelgl.Window

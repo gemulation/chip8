@@ -144,7 +144,7 @@ func (s *SkipXY) Execute() {
 func (s *SkipXY) String() string {
 	x := (s.val >> 8) & 0xF
 	y := (s.val >> 4) & 0xF
-	return fmt.Sprintf("%04X - %04X - SE V%X, Vy%d", s.addr, s.val, x, y)
+	return fmt.Sprintf("%04X - %04X - SE V%X, Vy%X", s.addr, s.val, x, y)
 }
 
 // LoadX sets Vx = kk.
@@ -510,7 +510,8 @@ type SkipKey struct{ *BaseInstruction }
 // Execute the instruction.
 func (s *SkipKey) Execute() {
 	x := (s.val >> 8) & 0xF
-	if s.emulator.keys[x] {
+	vx := s.emulator.cpu.v[x]
+	if s.emulator.display.window.Pressed(Keys[vx]) {
 		s.emulator.cpu.pc += InstructionSize // skip one instruction
 	}
 }
@@ -528,7 +529,8 @@ type SkipNotKey struct{ *BaseInstruction }
 // Execute the instruction.
 func (s *SkipNotKey) Execute() {
 	x := (s.val >> 8) & 0xF
-	if !s.emulator.keys[x] {
+	vx := s.emulator.cpu.v[x]
+	if !s.emulator.display.window.Pressed(Keys[vx]) {
 		s.emulator.cpu.pc += InstructionSize // skip one instruction
 	}
 }
@@ -561,7 +563,15 @@ type WaitKey struct{ *BaseInstruction }
 
 // Execute the instruction.
 func (w *WaitKey) Execute() {
-	// x := (w.val >> 8) & 0xF
+	x := (w.val >> 8) & 0xF
+	for {
+		for i, key := range Keys {
+			if w.emulator.display.window.Pressed(key) {
+				w.emulator.cpu.v[x] = uint8(i)
+				return
+			}
+		}
+	}
 }
 
 func (w *WaitKey) String() string {
