@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/gemulation/chip8"
+	"github.com/gemulation/chip8/chip8"
 )
 
 func main() {

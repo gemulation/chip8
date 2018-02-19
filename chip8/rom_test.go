@@ -3,7 +3,7 @@ package chip8_test
 import (
 	"testing"
 
-	"github.com/gemulation/chip8"
+	"github.com/gemulation/chip8/chip8"
 	"github.com/stretchr/testify/require"
 )
 
