@@ -45,7 +45,7 @@ func (emulator *Emulator) Run() {
 			emulator.cpu.UpdateTimers()
 
 			// slow down processor
-			time.Sleep(1200 * time.Microsecond)
+			time.Sleep(1400 * time.Microsecond)
 		}
 	})
 }

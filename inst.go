@@ -12,8 +12,8 @@ type Instruction interface {
 
 type BaseInstruction struct {
 	emulator *Emulator
-	val      uint16
 	addr     uint16
+	val      uint16
 }
 
 // Execute the instruction.
@@ -479,7 +479,11 @@ func (d *Draw) Execute() {
 		pixel := d.emulator.ram.data[d.emulator.cpu.i+yline]
 		for xline := uint16(0); xline < 8; xline++ {
 			if (pixel & (0x80 >> xline)) != 0 {
-				index := x + xline + ((y + yline) * 64)
+				// handle wrapping of screen
+				x := (x + xline) % DisplayWidth
+				y := (y + yline) % DisplayHeight
+				index := x + (y * 64)
+
 				// check collision
 				if d.emulator.display.memory[index] == 1 {
 					d.emulator.cpu.v[0xF] = 1 // collision
