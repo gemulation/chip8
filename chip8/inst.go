@@ -96,7 +96,7 @@ type SkipX struct{ *BaseInstruction }
 func (s *SkipX) Execute() {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
-	if s.emulator.cpu.v[x] == kk {
+	if s.emulator.cpu.v[x] == uint8(kk) {
 		s.emulator.cpu.pc += InstructionSize // skip one instruction
 	}
 }
@@ -116,7 +116,7 @@ type SkipNotX struct{ *BaseInstruction }
 func (s *SkipNotX) Execute() {
 	x := (s.val >> 8) & 0xF
 	kk := s.val & 0xFF
-	if s.emulator.cpu.v[x] != kk {
+	if s.emulator.cpu.v[x] != uint8(kk) {
 		s.emulator.cpu.pc += InstructionSize // skip one instruction
 	}
 }
@@ -156,7 +156,7 @@ type LoadX struct{ *BaseInstruction }
 func (l *LoadX) Execute() {
 	x := (l.val >> 8) & 0xF
 	kk := l.val & 0xFF
-	l.emulator.cpu.v[x] = kk // load register
+	l.emulator.cpu.v[x] = uint8(kk) // load register
 }
 
 func (l *LoadX) String() string {
@@ -174,7 +174,7 @@ type AddX struct{ *BaseInstruction }
 func (a *AddX) Execute() {
 	x := (a.val >> 8) & 0xF
 	kk := a.val & 0xFF
-	a.emulator.cpu.v[x] += kk // add value to register
+	a.emulator.cpu.v[x] += uint8(kk) // add value to register
 }
 
 func (a *AddX) String() string {
@@ -430,12 +430,12 @@ type JumpV0 struct{ *BaseInstruction }
 
 // Execute the instruction.
 func (j *JumpV0) Execute() {
-	nnn := (j.val & 0xFFF) + j.emulator.cpu.v[0]
+	nnn := (j.val & 0xFFF) + uint16(j.emulator.cpu.v[0])
 	j.emulator.cpu.pc = nnn
 }
 
 func (j *JumpV0) String() string {
-	nnn := (j.val & 0xFFF) + j.emulator.cpu.v[0]
+	nnn := (j.val & 0xFFF) + uint16(j.emulator.cpu.v[0])
 	return fmt.Sprintf("%04d - %04X - JP V0, %04X", j.addr, j.val, nnn)
 }
 
@@ -449,7 +449,7 @@ type RND struct{ *BaseInstruction }
 func (r *RND) Execute() {
 	x := (r.val >> 8) & 0xF
 	kk := r.val & 0xFF
-	r.emulator.cpu.v[x] = uint16(rand.Intn(255)) & kk // bitwise AND
+	r.emulator.cpu.v[x] = uint8(uint16(rand.Intn(255)) & kk) // bitwise AND
 }
 
 func (r *RND) String() string {
@@ -480,8 +480,8 @@ func (d *Draw) Execute() {
 		for xline := uint16(0); xline < 8; xline++ {
 			if (pixel & (0x80 >> xline)) != 0 {
 				// handle wrapping of screen
-				x := (x + xline) % DisplayWidth
-				y := (y + yline) % DisplayHeight
+				x := (uint16(x) + xline) % DisplayWidth
+				y := (uint16(y) + yline) % DisplayHeight
 				index := x + (y * 64)
 
 				// check collision
@@ -546,7 +546,7 @@ type GetDelayTimer struct{ *BaseInstruction }
 // Execute the instruction.
 func (g *GetDelayTimer) Execute() {
 	x := (g.val >> 8) & 0xF
-	g.emulator.cpu.v[x] = g.emulator.cpu.dt
+	g.emulator.cpu.v[x] = uint8(g.emulator.cpu.dt)
 }
 
 func (g *GetDelayTimer) String() string {
@@ -577,7 +577,7 @@ type SetDelayTimer struct{ *BaseInstruction }
 // Execute the instruction.
 func (s *SetDelayTimer) Execute() {
 	x := (s.val >> 8) & 0xF
-	s.emulator.cpu.dt = s.emulator.cpu.v[x]
+	s.emulator.cpu.dt = uint16(s.emulator.cpu.v[x])
 }
 
 func (s *SetDelayTimer) String() string {
@@ -593,7 +593,7 @@ type SetSoundTimer struct{ *BaseInstruction }
 // Execute the instruction.
 func (s *SetSoundTimer) Execute() {
 	x := (s.val >> 8) & 0xF
-	s.emulator.cpu.st = s.emulator.cpu.v[x]
+	s.emulator.cpu.st = uint16(s.emulator.cpu.v[x])
 }
 
 func (s *SetSoundTimer) String() string {
@@ -609,7 +609,7 @@ type AddI struct{ *BaseInstruction }
 // Execute the instruction.
 func (a *AddI) Execute() {
 	x := (a.val >> 8) & 0xF
-	a.emulator.cpu.i += a.emulator.cpu.v[x]
+	a.emulator.cpu.i += uint16(a.emulator.cpu.v[x])
 }
 
 func (a *AddI) String() string {
@@ -626,7 +626,7 @@ type LoadSprite struct{ *BaseInstruction }
 // Execute the instruction.
 func (l *LoadSprite) Execute() {
 	x := (l.val >> 8) & 0xF
-	l.emulator.cpu.i = l.emulator.cpu.v[x] * SpriteSize
+	l.emulator.cpu.i = uint16(l.emulator.cpu.v[x]) * SpriteSize
 }
 
 func (l *LoadSprite) String() string {
@@ -682,7 +682,7 @@ type ReadMemory struct{ *BaseInstruction }
 func (l *ReadMemory) Execute() {
 	x := (l.val >> 8) & 0xF
 	for i := uint16(0); i <= x; i++ {
-		l.emulator.cpu.v[i] = uint16(l.emulator.ram.data[l.emulator.cpu.i+i])
+		l.emulator.cpu.v[i] = l.emulator.ram.data[l.emulator.cpu.i+i]
 	}
 }
 
